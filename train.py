@@ -8,19 +8,20 @@ import paddle
 from paddlenlp.data import Pad, Stack, Tuple
 import sentencepiece as spm
 
-from model import BoWModel
+from model import FastText
 from utils import convert_example, create_dataloader
 from yahoo_answers import YahooAnswers
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
+parser.add_argument("--emb_dim", type=int, default=10, help="Size of word embeddings.")
+parser.add_argument("--epochs", type=int, default=5, help="Number of epoches for training.")
+parser.add_argument("--lr", type=float, default=0.05, help="Learning rate used to train.")
+parser.add_argument("--batch_size", type=int, default=1024, help="Total examples' number of a batch for training.")
 parser.add_argument("--spm_model_file", type=str, default='./data/fast_text_spm.model', help="Path to the SentencePiece tokenizer model.")
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
 parser.add_argument("--init_from_ckpt", type=str, default=None, help="The path of checkpoint to be loaded.")
-parser.add_argument("--epochs", type=int, default=1, help="Number of epoches for training.")
 parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
-parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate used to train.")
-parser.add_argument("--batch_size", type=int, default=64, help="Total examples' number of a batch for training.")
 args = parser.parse_args()
 # yapf: enable
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     vocab_size = 500294
 
     # Constructs the newtork.
-    model = BoWModel(vocab_size, num_classes)
+    model = FastText(vocab_size, num_classes, args.emb_dim)
     model = paddle.Model(model)
 
     # Reads data and generates mini-batches.
