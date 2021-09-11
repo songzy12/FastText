@@ -1,23 +1,23 @@
 # examples/text_classification/rnn/train.py
 from functools import partial
 import argparse
-import os
 import random
 
 import numpy as np
 import paddle
-from paddlenlp.data import JiebaTokenizer, Pad, Stack, Tuple, Vocab
-from paddlenlp.datasets import load_dataset
+from paddlenlp.data import Pad, Stack, Tuple
+import sentencepiece as spm
 
 from model import BoWModel
 from utils import convert_example, create_dataloader
+from yahoo_answers import YahooAnswers
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
-parser.add_argument("--vocab_path", type=str, default="./data/senta_word_dict.txt", help="The directory to dataset.")
+parser.add_argument("--spm_model_file", type=str, default='./data/fast_text_spm.model', help="Path to the SentencePiece tokenizer model.")
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
 parser.add_argument("--init_from_ckpt", type=str, default=None, help="The path of checkpoint to be loaded.")
-parser.add_argument("--epochs", type=int, default=10, help="Number of epoches for training.")
+parser.add_argument("--epochs", type=int, default=1, help="Number of epoches for training.")
 parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
 parser.add_argument("--lr", type=float, default=5e-5, help="Learning rate used to train.")
 parser.add_argument("--batch_size", type=int, default=64, help="Total examples' number of a batch for training.")
@@ -37,44 +37,38 @@ if __name__ == "__main__":
     set_seed()
 
     # Loads dataset.
-    train_ds, dev_ds = load_dataset("chnsenticorp", splits=["train", "dev"])
-    num_classes = len(train_ds.label_list)
+    train_ds, dev_ds = YahooAnswers().read_datasets(splits=['train', 'test'])
 
-    # Loads vocab.
-    if not os.path.exists(args.vocab_path):
-        raise RuntimeError('The vocab_path  can not be found in the path %s' %
-                           args.vocab_path)
-    vocab = Vocab.load_vocabulary(args.vocab_path,
-                                  unk_token='[UNK]',
-                                  pad_token='[PAD]')
-    vocab_size = len(vocab)
-    pad_token_id = vocab.to_indices('[PAD]')
+    num_classes = len(train_ds.label_list)
+    vocab_size = 500294
 
     # Constructs the newtork.
-    model = BoWModel(vocab_size, num_classes, padding_idx=pad_token_id)
+    model = BoWModel(vocab_size, num_classes)
     model = paddle.Model(model)
 
     # Reads data and generates mini-batches.
-    tokenizer = JiebaTokenizer(vocab)
+    tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
     trans_fn = partial(convert_example, tokenizer=tokenizer, is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=vocab.token_to_idx.get('[PAD]', 0)),  # input_ids
+        Pad(axis=0, pad_val=0),  # input_ids
         Stack(dtype="int64"),  # seq len
         Stack(dtype="int64")  # label
     ): [data for data in fn(samples)]
-    train_loader = create_dataloader(train_ds,
-                                     trans_fn=trans_fn,
-                                     batch_size=args.batch_size,
-                                     mode='train',
-                                     batchify_fn=batchify_fn)
-    dev_loader = create_dataloader(dev_ds,
-                                   trans_fn=trans_fn,
-                                   batch_size=args.batch_size,
-                                   mode='validation',
-                                   batchify_fn=batchify_fn)
+    train_loader = create_dataloader(
+        train_ds,
+        trans_fn=trans_fn,
+        batch_size=args.batch_size,
+        mode='train',
+        batchify_fn=batchify_fn)
+    dev_loader = create_dataloader(
+        dev_ds,
+        trans_fn=trans_fn,
+        batch_size=args.batch_size,
+        mode='validation',
+        batchify_fn=batchify_fn)
 
-    optimizer = paddle.optimizer.Adam(parameters=model.parameters(),
-                                      learning_rate=args.lr)
+    optimizer = paddle.optimizer.Adam(
+        parameters=model.parameters(), learning_rate=args.lr)
 
     # Defines loss and metric.
     criterion = paddle.nn.CrossEntropyLoss()
