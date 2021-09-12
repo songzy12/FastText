@@ -28,7 +28,7 @@ class YahooAnswers(DatasetBuilder):
         return fullname
 
     def _read(self, filename, *args):
-        data = pd.read_csv(filename)
+        data = pd.read_csv(filename, header=None)
         for class_index, question_title, question_content, best_answer in data.values:
             text = question_title
             if type(question_content) is str:
