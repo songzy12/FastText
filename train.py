@@ -11,6 +11,7 @@ import sentencepiece as spm
 from model import FastText
 from utils import convert_example, create_dataloader
 from datasets.yahoo_answers import YahooAnswers
+from datasets.amazon_reviews import AmazonReviews
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
@@ -22,6 +23,7 @@ parser.add_argument("--spm_model_file", type=str, default='./data/fast_text_spm.
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
 parser.add_argument("--init_from_ckpt", type=str, default=None, help="The path of checkpoint to be loaded.")
 parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
+parser.add_argument('--dataset', choices=['yahoo_answers', 'amazon_reviews'], default="yahoo_answers", help="Select which dataset to train model, defaults to yahoo_answers.")
 args = parser.parse_args()
 # yapf: enable
 
@@ -38,7 +40,14 @@ if __name__ == "__main__":
     set_seed()
 
     # Loads dataset.
-    train_ds, dev_ds = YahooAnswers().read_datasets(splits=['train', 'test'])
+    if args.dataset == "yahoo_answers":
+        train_ds, dev_ds = YahooAnswers().read_datasets(
+            splits=['train', 'test'])
+    elif args.dataset == "amazon_reviews":
+        all_ds = AmazonReviews().read_datasets(splits=['all'])
+        train_len = int(len(all_ds) * 0.8)
+        dev_len = len(all_ds) - train_len
+        train_ds, dev_ds = paddle.io.random_split(all_ds, [train_len, dev_len])
 
     num_classes = len(train_ds.label_list)
     vocab_size = 500294
