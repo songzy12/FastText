@@ -1,0 +1,6 @@
+scipy==1.6.0
+pandas==1.2.1
+numpy==1.18.5
+paddle==1.0.2
+paddlenlp==2.0.8
+sentencepiece==0.1.96
