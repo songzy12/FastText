@@ -44,10 +44,8 @@ if __name__ == "__main__":
         train_ds, dev_ds = YahooAnswers().read_datasets(
             splits=['train', 'test'])
     elif args.dataset == "amazon_reviews":
-        all_ds = AmazonReviews().read_datasets(splits=['all'])
-        train_len = int(len(all_ds) * 0.8)
-        dev_len = len(all_ds) - train_len
-        train_ds, dev_ds = paddle.io.random_split(all_ds, [train_len, dev_len])
+        train_ds, dev_ds = AmazonReviews().read_datasets(
+            splits=['train', 'test'])
 
     num_classes = len(train_ds.label_list)
     vocab_size = 500294

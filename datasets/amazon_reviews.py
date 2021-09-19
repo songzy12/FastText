@@ -1,6 +1,7 @@
 import os
 import collections
 
+import pandas as pd
 from paddlenlp.utils.env import DATA_HOME
 from paddlenlp.datasets import DatasetBuilder
 
@@ -19,7 +20,8 @@ class AmazonReviews(DatasetBuilder):
     """
     META_INFO = collections.namedtuple('META_INFO', ('file', 'md5'))
     SPLITS = {
-        'all': META_INFO(os.path.join('amazon_reviews', 'all.txt'), None),
+        'train': META_INFO(os.path.join('amazon_reviews', 'train.csv'), None),
+        'test': META_INFO(os.path.join('amazon_reviews', 'test.csv'), None),
     }
 
     def _get_data(self, mode, **kwargs):
@@ -29,33 +31,15 @@ class AmazonReviews(DatasetBuilder):
 
         return fullname
 
-    def _is_valid(self, entry):
-        return ('review/score' in entry) and ('review/summary' in entry or
-                                              'review/text' in entry)
-
-    def _get_example(self, entry):
-        return {
-            'text': entry.get('review/summary', '') + '\n' + \
-                entry.get('review/text', ''),
-            'label': entry['review/score']
-        }
-
     def _read(self, filename, *args):
-        with open(filename, 'r') as f:
-            entry = {}
-            for l in f:
-                l = l.strip()
-                colonPos = l.find(':')
-                if colonPos == -1:
-                    if self._is_valid(entry):
-                        yield self._get_example(entry)
-                    entry = {}
-                    continue
-                eName = l[:colonPos]
-                rest = l[colonPos + 2:]
-                entry[eName] = rest
-            if self._is_valid(entry):
-                yield self._get_example(entry)
+        data = pd.read_csv(filename, header=None)
+        for score, review_title, review_text in data.values:
+            text = ''
+            if type(review_title) is str:
+                text += '\n' + review_title
+            if type(review_text) is str:
+                text += '\n' + review_text
+            yield {"text": text, "label": score}
 
     def get_labels(self):
-        return ['1.0', '2.0', '3.0', '4.0', '5.0']
+        return range(1, 6)
