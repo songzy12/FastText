@@ -10,7 +10,7 @@ import sentencepiece as spm
 
 from model import FastText
 from utils import convert_example, create_dataloader
-from yahoo_answers import YahooAnswers
+from datasets.yahoo_answers import YahooAnswers
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
