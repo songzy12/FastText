@@ -15,9 +15,9 @@ class YahooAnswers(DatasetBuilder):
     META_INFO = collections.namedtuple('META_INFO', ('file', 'md5'))
     SPLITS = {
         'train': META_INFO(
-            os.path.join('yahoo_answers_csv', 'train.csv'), None),
+            os.path.join('yahoo_answers', 'train.csv'), None),
         'test':
-        META_INFO(os.path.join('yahoo_answers_csv', 'test.csv'), None)
+        META_INFO(os.path.join('yahoo_answers', 'test.csv'), None)
     }
 
     def _get_data(self, mode, **kwargs):
