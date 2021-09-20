@@ -1,7 +1,9 @@
 # examples/text_classification/rnn/train.py
-from functools import partial
 import argparse
+from functools import partial
 import random
+import sys
+import time
 
 import numpy as np
 import paddle
@@ -24,6 +26,7 @@ parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Dire
 parser.add_argument("--init_from_ckpt", type=str, default=None, help="The path of checkpoint to be loaded.")
 parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
 parser.add_argument('--dataset', choices=['yahoo_answers', 'amazon_reviews'], default="yahoo_answers", help="Select which dataset to train model, defaults to yahoo_answers.")
+parser.add_argument("--log_dir", type=str, default='./log/', help="Directory to save log files.")
 args = parser.parse_args()
 # yapf: enable
 
@@ -35,7 +38,11 @@ def set_seed(seed=1000):
     paddle.seed(seed)
 
 
+sys.stdout = open('%s/train.%s.log' % (args.log_dir, int(time.time())), "w")
+
 if __name__ == "__main__":
+    print(args)
+
     paddle.set_device(args.device)
     set_seed()
 
@@ -90,9 +97,10 @@ if __name__ == "__main__":
         print("Loaded checkpoint from %s" % args.init_from_ckpt)
 
     # Starts training and evaluating.
-    callback = paddle.callbacks.ProgBarLogger(log_freq=10, verbose=3)
+    # TODO(songzy): add a VisualDL callback here.
+    callbacks = [paddle.callbacks.ProgBarLogger(log_freq=10, verbose=3), ]
     model.fit(train_loader,
               dev_loader,
               epochs=args.epochs,
               save_dir=args.save_dir,
-              callbacks=callback)
+              callbacks=callbacks)
