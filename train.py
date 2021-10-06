@@ -97,8 +97,11 @@ if __name__ == "__main__":
         print("Loaded checkpoint from %s" % args.init_from_ckpt)
 
     # Starts training and evaluating.
-    # TODO(songzy): add a VisualDL callback here.
-    callbacks = [paddle.callbacks.ProgBarLogger(log_freq=10, verbose=3), ]
+    callbacks = [
+        paddle.callbacks.ProgBarLogger(
+            log_freq=10, verbose=3),
+        paddle.callbacks.VisualDL(log_dir=args.log_dir)
+    ]
     model.fit(train_loader,
               dev_loader,
               epochs=args.epochs,
