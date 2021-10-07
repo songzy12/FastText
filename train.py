@@ -90,6 +90,7 @@ if __name__ == "__main__":
     metric = paddle.metric.Accuracy()
 
     model.prepare(optimizer, criterion, metric)
+    print(model.summary(input_size=[(1, 1), (1, 1)], dtype='int64'))
 
     # Loads pre-trained parameters.
     if args.init_from_ckpt:
