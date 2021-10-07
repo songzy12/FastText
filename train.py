@@ -21,7 +21,7 @@ parser.add_argument("--emb_dim", type=int, default=10, help="Size of word embedd
 parser.add_argument("--epochs", type=int, default=5, help="Number of epoches for training.")
 parser.add_argument("--lr", type=float, default=0.05, help="Learning rate used to train.")
 parser.add_argument("--batch_size", type=int, default=1024, help="Total examples' number of a batch for training.")
-parser.add_argument("--spm_model_file", type=str, default='./data/fast_text_spm.model', help="Path to the SentencePiece tokenizer model.")
+parser.add_argument("--spm_model_file", type=str, default='./data/yahoo_answers.unigram.500000.model', help="Path to the SentencePiece tokenizer model.")
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
 parser.add_argument("--init_from_ckpt", type=str, default=None, help="The path of checkpoint to be loaded.")
 parser.add_argument('--device', choices=['cpu', 'gpu'], default="gpu", help="Select which device to train model, defaults to gpu.")
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             splits=['train', 'test'])
 
     num_classes = len(train_ds.label_list)
-    vocab_size = 500294
+    vocab_size = 500000
 
     # Constructs the newtork.
     model = FastText(vocab_size, num_classes, args.emb_dim)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
     trans_fn = partial(convert_example, tokenizer=tokenizer, is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
-        Pad(axis=0, pad_val=0),  # input_ids
+        Pad(axis=0, pad_val=-1),  # input_ids
         Stack(dtype="int64"),  # seq len
         Stack(dtype="int64")  # label
     ): [data for data in fn(samples)]

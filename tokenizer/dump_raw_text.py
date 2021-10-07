@@ -4,7 +4,7 @@ from yahoo_answers import YahooAnswers
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
-parser.add_argument("--text_file", type=str, default='./tmp/raw_text.txt', help="File path to save raw text from training dataset.")
+parser.add_argument("--text_file", type=str, default='./tmp/raw_yahoo_answers.txt', help="File path to save raw text from training dataset.")
 args = parser.parse_args()
 # yapf: enable
 
