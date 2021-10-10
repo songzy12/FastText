@@ -17,10 +17,9 @@ class FastText(nn.Layer):
     which is passed through one final feed-forward layer to output a logits (`output_layer`).
     """
 
-    def __init__(self, vocab_size, num_classes, emb_dim, padding_idx=0):
+    def __init__(self, vocab_size, num_classes, emb_dim):
         super().__init__()
-        self.embedder = nn.Embedding(
-            vocab_size, emb_dim, padding_idx=padding_idx)
+        self.embedder = nn.Embedding(vocab_size, emb_dim)
         self.bow_encoder = nlp.seq2vec.BoWEncoder(emb_dim)
         self.output_layer = nn.Linear(emb_dim, num_classes, bias_attr=False)
 
