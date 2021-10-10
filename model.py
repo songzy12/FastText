@@ -22,7 +22,7 @@ class FastText(nn.Layer):
         self.embedder = nn.Embedding(
             vocab_size, emb_dim, padding_idx=padding_idx)
         self.bow_encoder = nlp.seq2vec.BoWEncoder(emb_dim)
-        self.output_layer = nn.Linear(emb_dim, num_classes)
+        self.output_layer = nn.Linear(emb_dim, num_classes, bias_attr=False)
 
     def forward(self, text, seq_len=None):
         # Shape: (batch_size, seq_len, embedding_dim)
