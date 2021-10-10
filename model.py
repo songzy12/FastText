@@ -10,11 +10,11 @@ INF = 1. * 1e12
 
 class FastText(nn.Layer):
     """
-    This class implements the Bag of Words Classification Network model to classify texts.
+    This class implements the fastText model to classify texts.
     At a high level, the model starts by embedding the tokens and running them through
     a word embedding. Then, we encode these representations with a `BoWEncoder`.
     Lastly, we take the output of the encoder to create a final representation,
-    which is passed through some feed-forward layers to output a logits (`output_layer`).
+    which is passed through one final feed-forward layer to output a logits (`output_layer`).
     """
 
     def __init__(self, vocab_size, num_classes, emb_dim, padding_idx=0):
@@ -27,10 +27,8 @@ class FastText(nn.Layer):
     def forward(self, text, seq_len=None):
         # Shape: (batch_size, seq_len, embedding_dim)
         embedded_text = self.embedder(text)
-
         # Shape: (batch_size, embedding_dim)
         summed = self.bow_encoder(embedded_text)
-
         # Shape: (batch_size, num_classes)
         logits = self.output_layer(summed)
         return logits
