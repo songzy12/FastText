@@ -19,7 +19,7 @@ from datasets.amazon_reviews import AmazonReviews
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument("--emb_dim", type=int, default=10, help="Size of word embeddings.")
 parser.add_argument("--epochs", type=int, default=5, help="Number of epoches for training.")
-parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate used to train.")
+parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate used to train.")
 parser.add_argument("--batch_size", type=int, default=1024, help="Total examples' number of a batch for training.")
 parser.add_argument("--spm_model_file", type=str, default='./data/yahoo_answers.unigram.500000.model', help="Path to the SentencePiece tokenizer model.")
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     paddle.set_device(args.device)
     set_seed()
+    print("paddle.in_dynamic_mode:", paddle.in_dynamic_mode())
 
     # Loads dataset.
     if args.dataset == "yahoo_answers":
