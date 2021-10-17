@@ -10,16 +10,17 @@ import paddle
 from paddlenlp.data import Pad, Stack, Tuple
 import sentencepiece as spm
 
-from model import FastText
-from utils import convert_example, create_dataloader
 from datasets.yahoo_answers import YahooAnswers
 from datasets.amazon_reviews import AmazonReviews
+from model import FastText
+from optimizer.lr import LinearDecay
+from utils import convert_example, create_dataloader
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument("--emb_dim", type=int, default=10, help="Size of word embeddings.")
 parser.add_argument("--epochs", type=int, default=5, help="Number of epoches for training.")
-parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate used to train.")
+parser.add_argument("--lr", type=float, default=1, help="Learning rate used to train.")
 parser.add_argument("--batch_size", type=int, default=1024, help="Total examples' number of a batch for training.")
 parser.add_argument("--spm_model_file", type=str, default='./data/yahoo_answers.unigram.500000.model', help="Path to the SentencePiece tokenizer model.")
 parser.add_argument("--save_dir", type=str, default='./checkpoints/', help="Directory to save model checkpoint")
@@ -63,6 +64,7 @@ if __name__ == "__main__":
     model = paddle.Model(model)
 
     # Reads data and generates mini-batches.
+    # TODO(songzy): update the tokenizer.
     tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
     trans_fn = partial(convert_example, tokenizer=tokenizer, is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
@@ -83,8 +85,11 @@ if __name__ == "__main__":
         mode='validation',
         batchify_fn=batchify_fn)
 
+    total_epoch = len(train_loader) * args.epochs / args.batch_size
+    lr = LinearDecay(total_epoch=int(total_epoch), learning_rate=args.lr)
+    # TODO(songzy): change the optimizer to SGD.
     optimizer = paddle.optimizer.Adam(
-        parameters=model.parameters(), learning_rate=args.lr)
+        parameters=model.parameters(), learning_rate=lr)
 
     # Defines loss and metric.
     criterion = paddle.nn.CrossEntropyLoss()
@@ -102,7 +107,8 @@ if __name__ == "__main__":
     callbacks = [
         paddle.callbacks.ProgBarLogger(
             log_freq=10, verbose=3),
-        paddle.callbacks.VisualDL(log_dir=args.log_dir)
+        paddle.callbacks.VisualDL(log_dir=args.log_dir),
+        paddle.callbacks.LRScheduler(by_step=True),
     ]
     model.fit(train_loader,
               dev_loader,
