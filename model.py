@@ -2,10 +2,8 @@
 
 import paddle
 import paddle.nn as nn
-
 import paddlenlp as nlp
-
-INF = 1. * 1e12
+import numpy as np
 
 
 class FastText(nn.Layer):
@@ -19,15 +17,24 @@ class FastText(nn.Layer):
 
     def __init__(self, vocab_size, num_classes, emb_dim):
         super().__init__()
+
         self.embedder = nn.Embedding(vocab_size, emb_dim)
+        weight = (np.random.rand(vocab_size, emb_dim) * 2 - 1) / emb_dim
+        self.embedder.weight.set_value(weight.astype('float32'))
+
         self.bow_encoder = nlp.seq2vec.BoWEncoder(emb_dim)
-        self.output_layer = nn.Linear(emb_dim, num_classes, bias_attr=False)
+
+        weight_attr = paddle.ParamAttr(
+            name="weight", initializer=paddle.nn.initializer.Constant(value=0))
+        self.output_layer = nn.Linear(
+            emb_dim, num_classes, weight_attr=weight_attr, bias_attr=False)
 
     def forward(self, text, seq_len=None):
         # Shape: (batch_size, seq_len, embedding_dim)
         embedded_text = self.embedder(text)
         # Shape: (batch_size, embedding_dim)
         summed = self.bow_encoder(embedded_text)
+        summed = summed / embedded_text.shape[1]
         # Shape: (batch_size, num_classes)
         logits = self.output_layer(summed)
         return logits
