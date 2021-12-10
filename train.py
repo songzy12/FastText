@@ -14,7 +14,7 @@ from datasets.yahoo_answers import YahooAnswers
 from datasets.amazon_reviews import AmazonReviews
 from model import FastText
 from optimizer.lr import LinearDecay
-from utils import convert_example, create_dataloader
+import utils
 
 # yapf: disable
 parser = argparse.ArgumentParser(__doc__)
@@ -31,76 +31,96 @@ parser.add_argument("--log_dir", type=str, default='./log/', help="Directory to 
 args = parser.parse_args()
 # yapf: enable
 
+sys.stdout = open('%s/train.%s.log' % (args.log_dir, int(time.time())), "w")
 
-def set_seed(seed=1000):
-    """sets random seed"""
+SEED = 1000
+VOCAB_SIZE = 500000
+
+
+def init_paddle(seed, device):
     random.seed(seed)
     np.random.seed(seed)
     paddle.seed(seed)
 
-
-sys.stdout = open('%s/train.%s.log' % (args.log_dir, int(time.time())), "w")
-
-if __name__ == "__main__":
-    print(args)
-
-    paddle.set_device(args.device)
-    set_seed()
+    paddle.set_device(device)
     print("paddle.in_dynamic_mode:", paddle.in_dynamic_mode())
 
-    # Loads dataset.
-    if args.dataset == "yahoo_answers":
+
+def load_dataset(dataset):
+    if dataset == "yahoo_answers":
         train_ds, dev_ds = YahooAnswers().read_datasets(
             splits=['train', 'test'])
-    elif args.dataset == "amazon_reviews":
+    elif dataset == "amazon_reviews":
         train_ds, dev_ds = AmazonReviews().read_datasets(
             splits=['train', 'test'])
+    return train_ds, dev_ds
 
-    num_classes = len(train_ds.label_list)
-    vocab_size = 500000
 
-    # Constructs the newtork.
-    model = FastText(vocab_size, num_classes, args.emb_dim)
-    model = paddle.Model(model)
-
-    # Reads data and generates mini-batches.
-    # TODO(songzy): update the tokenizer.
-    tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
-    trans_fn = partial(convert_example, tokenizer=tokenizer, is_test=False)
+def get_dataloader(train_ds, dev_ds, tokenizer, batch_size):
+    trans_fn = partial(
+        utils.convert_example, tokenizer=tokenizer, is_test=False)
     batchify_fn = lambda samples, fn=Tuple(
         Pad(axis=0, pad_val=-1),  # input_ids
         Stack(dtype="int64"),  # seq len
         Stack(dtype="int64")  # label
     ): [data for data in fn(samples)]
-    train_loader = create_dataloader(
+    train_loader = utils.create_dataloader(
         train_ds,
         trans_fn=trans_fn,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         mode='train',
         batchify_fn=batchify_fn)
-    dev_loader = create_dataloader(
+    dev_loader = utils.create_dataloader(
         dev_ds,
         trans_fn=trans_fn,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         mode='validation',
         batchify_fn=batchify_fn)
+
+    return train_loader, dev_loader
+
+
+def build_model(vocab_size, num_classes, emb_dim):
+    model = FastText(vocab_size, num_classes, emb_dim)
+    model = paddle.Model(model)
+    return model
+
+
+def init_model(model, optimizer, criterion, metric, init_from_ckpt):
+    model.prepare(optimizer, criterion, metric)
+    print(model.summary(input_size=[(1, 1), (1, 1)], dtype='int64'))
+
+    if init_from_ckpt:
+        model.load(init_from_ckpt)
+        print("Loaded checkpoint from %s" % init_from_ckpt)
+    return model
+
+
+if __name__ == "__main__":
+    print(args)
+
+    init_paddle(seed=SEED, device=args.device)
+
+    train_ds, dev_ds = load_dataset(args.dataset)
+
+    model = build_model(VOCAB_SIZE, len(train_ds.label_list), args.emb_dim)
+
+    # Reads data and generates mini-batches.
+    # TODO(songzy): update the tokenizer.
+    tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
+    train_loader, dev_loader = get_dataloader(train_ds, dev_ds, tokenizer,
+                                              args.batch_size)
 
     total_epoch = len(train_loader) * args.epochs / args.batch_size
     lr = LinearDecay(total_epoch=int(total_epoch), learning_rate=args.lr)
     optimizer = paddle.optimizer.SGD(learning_rate=lr,
                                      parameters=model.parameters())
 
-    # Defines loss and metric.
     criterion = paddle.nn.CrossEntropyLoss()
     metric = paddle.metric.Accuracy()
 
-    model.prepare(optimizer, criterion, metric)
-    print(model.summary(input_size=[(1, 1), (1, 1)], dtype='int64'))
-
-    # Loads pre-trained parameters.
-    if args.init_from_ckpt:
-        model.load(args.init_from_ckpt)
-        print("Loaded checkpoint from %s" % args.init_from_ckpt)
+    model = init_model(model, optimizer, criterion, metric,
+                       args.init_from_ckpt)
 
     # Starts training and evaluating.
     callbacks = [
