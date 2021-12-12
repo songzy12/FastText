@@ -31,8 +31,6 @@ parser.add_argument("--log_dir", type=str, default='./log/', help="Directory to 
 args = parser.parse_args()
 # yapf: enable
 
-sys.stdout = open('%s/train.%s.log' % (args.log_dir, int(time.time())), "w")
-
 SEED = 1000
 VOCAB_SIZE = 500000
 
