@@ -84,8 +84,8 @@ def build_model(vocab_size, num_classes, emb_dim):
     return model
 
 
-def get_optimizer(train_size, epochs, batch_size, lr):
-    total_epoch = train_size * epochs / batch_size
+def get_optimizer(train_size, epochs, lr):
+    total_epoch = train_size * epochs
     lr_scheduler = LinearDecay(total_epoch=int(total_epoch), learning_rate=lr)
     optimizer = paddle.optimizer.SGD(learning_rate=lr_scheduler,
                                      parameters=model.parameters())
@@ -109,15 +109,13 @@ if __name__ == "__main__":
     train_ds, dev_ds = load_dataset(args.dataset)
     model = build_model(VOCAB_SIZE, len(train_ds.label_list), args.emb_dim)
 
-    # TODO(songzy): update the tokenizer.
     tokenizer = spm.SentencePieceProcessor(model_file=args.spm_model_file)
     train_loader, dev_loader = get_dataloader(train_ds, dev_ds, tokenizer,
                                               args.batch_size)
 
     criterion = paddle.nn.CrossEntropyLoss()
     metric = paddle.metric.Accuracy()
-    optimizer = get_optimizer(
-        len(train_loader), args.epochs, args.batch_size, args.lr)
+    optimizer = get_optimizer(len(train_loader), args.epochs, args.lr)
     model = init_model(model, optimizer, criterion, metric,
                        args.init_from_ckpt)
 
