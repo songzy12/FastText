@@ -1,3 +1,5 @@
+A PaddlePaddle re-implementation of fastText [1].
+
 ## Dataset
 
 https://drive.google.com/file/d/0Bz8a_Dbh9QhbZVhsUnRWRDhETzA/view?resourcekey=0-Rp0ynafmZGZ5MflGmvwLGg
@@ -29,3 +31,7 @@ $ pip intall -r requirements.txt
 ```
 $ python train.py
 ```
+
+## Reference
+
+[1] Joulin A, Grave E, Bojanowski P, et al. Bag of tricks for efficient text classification[J]. arXiv preprint arXiv:1607.01759, 2016.
