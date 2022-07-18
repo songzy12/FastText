@@ -11,13 +11,13 @@ __all__ = ['YahooAnswers']
 class YahooAnswers(DatasetBuilder):
     """
     The data is from https://arxiv.org/pdf/1509.01626.pdf.
+
+    NOTE: not to be confused with paddlenlp/datasets/yahoo_answer_100k.py
     """
     META_INFO = collections.namedtuple('META_INFO', ('file', 'md5'))
     SPLITS = {
-        'train': META_INFO(
-            os.path.join('yahoo_answers', 'train.csv'), None),
-        'test':
-        META_INFO(os.path.join('yahoo_answers', 'test.csv'), None)
+        'train': META_INFO(os.path.join('yahoo_answers', 'train.csv'), None),
+        'test': META_INFO(os.path.join('yahoo_answers', 'test.csv'), None)
     }
 
     def _get_data(self, mode, **kwargs):
