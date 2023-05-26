@@ -34,7 +34,7 @@ $ python train.py
 
 ## Reference
 
-[1] Joulin A, Grave E, Bojanowski P, et al. Bag of tricks for efficient text classification[J]. arXiv preprint arXiv:1607.01759, 2016.
+[1] <https://arxiv.org/pdf/1607.01759.pdf>
 
 ## Resource
 
