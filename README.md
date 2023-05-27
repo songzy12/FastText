@@ -34,7 +34,8 @@ $ python train.py
 
 ## Reference
 
-[1] <https://arxiv.org/pdf/1607.01759.pdf>
+- <https://arxiv.org/pdf/1607.01759.pdf>
+- <https://github.com/facebookresearch/fastText>
 
 ## Resource
 
